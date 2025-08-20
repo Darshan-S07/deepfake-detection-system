@@ -1,14 +1,24 @@
 from fastapi import FastAPI
-from schemas.request_models import CallInfo
-from services.alerts import analyze_call
+from fastapi.middleware.cors import CORSMiddleware
+from app.auth import router as auth_router
+from app.routers.upload import router as media_router
+from app.ws_stream import router as ws_router
 
-app = FastAPI(title="SecureCallX Backend API")
+app = FastAPI(title="SecureCallX API")
+
+# CORS (allow your React dev server)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 def root():
-    return {"message": "SecureCallX API running"}
+    return {"status": "ok"}
 
-@app.post("/analyze-call")
-def analyze(call_info: CallInfo):
-    result = analyze_call(call_info)
-    return result
+app.include_router(auth_router)
+app.include_router(media_router)
+app.include_router(ws_router)

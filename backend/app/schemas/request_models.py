@@ -1,7 +1,11 @@
 from pydantic import BaseModel
 
+class UserIn(BaseModel):
+    username: str
+    password: str
+
 class CallInfo(BaseModel):
     caller_id: str
-    audio_url: str  # URL/path to audio for detection
-    video_url: str  # URL/path to video for detection
-    metadata: dict  # Info like duration, location, etc.
+    audio_url: str | None = None
+    video_url: str | None = None
+    metadata: dict | None = None
