@@ -1,5 +1,6 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from pymongo import MongoClient
+from bson import ObjectId
 import shutil, os
 from ai_model import DeepfakeDetector
 
@@ -16,28 +17,56 @@ detector = DeepfakeDetector()
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+
+def serialize_mongo_doc(doc: dict):
+    """
+    Convert any ObjectId values (like _id) into strings so FastAPI can JSON encode.
+    """
+    if not doc:
+        return doc
+    return {k: str(v) if isinstance(v, ObjectId) else v for k, v in doc.items()}
+
+
 @app.post("/analyze-audio")
 async def analyze_audio(file: UploadFile = File(...)):
-    file_path = os.path.join(UPLOAD_DIR, file.filename)
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    try:
+        file_path = os.path.join(UPLOAD_DIR, file.filename)
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
 
-    result = detector.analyze_audio(file_path)
+        # Run your AI model
+        result = detector.analyze_audio(file_path)
 
-    # Save to DB
-    analysis.insert_one(result)
+        # Insert into Mongo (Mongo will add an _id)
+        insert_result = analysis.insert_one(result)
 
-    return {"message": "Audio analyzed", "result": result}
+        # Merge the _id back into the dict for the response
+        result["_id"] = insert_result.inserted_id
+
+        return {
+            "message": "Audio analyzed",
+            "result": serialize_mongo_doc(result)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/analyze-video")
 async def analyze_video(file: UploadFile = File(...)):
-    file_path = os.path.join(UPLOAD_DIR, file.filename)
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    try:
+        file_path = os.path.join(UPLOAD_DIR, file.filename)
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
 
-    result = detector.analyze_video(file_path)
+        # Run your AI model
+        result = detector.analyze_video(file_path)
 
-    # Save to DB
-    analysis.insert_one(result)
+        insert_result = analysis.insert_one(result)
+        result["_id"] = insert_result.inserted_id
 
-    return {"message": "Video analyzed", "result": result}
+        return {
+            "message": "Video analyzed",
+            "result": serialize_mongo_doc(result)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
