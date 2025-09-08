@@ -1,31 +1,64 @@
-from fastapi import APIRouter, Depends, HTTPException, Header
-from app.schemas.request_models import UserIn
-from app.utils.db import get_db
-from app.utils.security import hash_password, verify_password, create_token, decode_token
+from fastapi import APIRouter, HTTPException, Depends
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jose import JWTError, jwt
+from datetime import datetime, timedelta
+from pydantic import BaseModel
+from pymongo import MongoClient
+import bcrypt
+import os
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-@router.post("/signup")
-def signup(user: UserIn, db=Depends(get_db)):
-    if db.users.find_one({"username": user.username}):
-        raise HTTPException(400, "User already exists")
-    db.users.insert_one({"username": user.username, "password": hash_password(user.password)})
-    return {"msg": "User created"}
+# MongoDB connection
+client = MongoClient("mongodb://localhost:27017/")
+db = client["deepfake_project"]
+users_collection = db["users"]
+
+# JWT settings
+SECRET_KEY = "supersecretkey123"  # Change in production!
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+
+class User(BaseModel):
+    username: str
+    password: str
+
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+@router.post("/register")
+def register(user: User):
+    if users_collection.find_one({"username": user.username}):
+        raise HTTPException(status_code=400, detail="Username already exists")
+
+    hashed_pw = bcrypt.hashpw(user.password.encode("utf-8"), bcrypt.gensalt())
+    users_collection.insert_one({"username": user.username, "password": hashed_pw})
+    return {"msg": "User registered successfully"}
 
 @router.post("/login")
-def login(user: UserIn, db=Depends(get_db)):
-    rec = db.users.find_one({"username": user.username})
-    if not rec or not verify_password(user.password, rec["password"]):
-        raise HTTPException(401, "Invalid credentials")
-    token = create_token(user.username)
-    return {"access_token": token, "token_type": "bearer"}
+def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = users_collection.find_one({"username": form_data.username})
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid username or password")
 
-# Dependency to protect routes
-def get_current_user(authorization: str = Header(None)):
-    if not authorization or not authorization.lower().startswith("bearer "):
-        raise HTTPException(401, "Missing token")
-    token = authorization.split(" ")[1]
-    payload = decode_token(token)
-    if not payload:
-        raise HTTPException(401, "Invalid/expired token")
-    return payload["sub"]
+    if not bcrypt.checkpw(form_data.password.encode("utf-8"), user["password"]):
+        raise HTTPException(status_code=400, detail="Invalid username or password")
+
+    access_token = create_access_token(data={"sub": user["username"]})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username = payload.get("sub")
+        if username is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    return username
