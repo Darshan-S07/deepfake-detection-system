@@ -2,6 +2,28 @@ from fastapi import APIRouter
 
 from fastapi import APIRouter, Depends, HTTPException, Header
 from utils.token import verify_token
+from fastapi import APIRouter, UploadFile, File
+from utils.logger import DetectionLogger
+
+router = APIRouter(
+    prefix="/detection",
+    tags=["Detection"]
+)
+
+@router.post("/analyze-audio/")
+async def analyze_audio(file: UploadFile = File(...)):
+    # Placeholder ML logic (to be replaced later with actual model)
+    result = "FAKE"  # pretend detection result
+    confidence = 0.87
+
+    # Log the detection
+    DetectionLogger.log_event(
+        content_type="audio",
+        status=result,
+        details=f"confidence={confidence}, filename={file.filename}"
+    )
+
+    return {"result": result, "confidence": confidence}
 
 router = APIRouter(prefix="/detect", tags=["detection"])
 

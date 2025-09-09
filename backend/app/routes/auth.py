@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from models.user import User
+from models.users import User
 from utils.db import users_collection
 from utils.hashing import Hash
 from utils.token import create_access_token
