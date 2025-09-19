@@ -1,14 +1,30 @@
-from fastapi import APIRouter
-
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException, Header,File,UploadFile
 from utils.token import verify_token
-from fastapi import APIRouter, UploadFile, File
 from utils.logger import DetectionLogger
+from ai_models.audio.audio_inference import AudioDeepfakeDetector
+from ai_models.video.video_inference import VideoDeepfakeDetector
 
 router = APIRouter(
     prefix="/detection",
     tags=["Detection"]
 )
+
+audio_detector = AudioDeepfakeDetector()
+video_detector = VideoDeepfakeDetector()
+
+@router.post("/detect/audio")
+async def detect_audio(file: UploadFile = File(...)):
+    with open("temp_audio.wav", "wb") as f:
+        f.write(await file.read())
+    result = audio_detector.predict("temp_audio.wav")
+    return {"type": "audio", "result": result}
+
+@router.post("/detect/video")
+async def detect_video(file: UploadFile = File(...)):
+    with open("temp_video.mp4", "wb") as f:
+        f.write(await file.read())
+    result = video_detector.predict("temp_video.mp4")
+    return {"type": "video", "result": result}
 
 @router.post("/analyze-audio/")
 async def analyze_audio(file: UploadFile = File(...)):
