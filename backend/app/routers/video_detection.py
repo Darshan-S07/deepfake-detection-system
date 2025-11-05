@@ -1,10 +1,13 @@
 from fastapi import APIRouter, File, UploadFile
 import torch
+import torchvision.models as models
 import cv2
 import numpy as np
 router = APIRouter()
 # Load pretrained model (dummy placeholder for now)
-model = torch.hub.load("RWTH-i6/faceforensics", "xception", pretrained=True)
+# model = torch.hub.load("RWTH-i6/faceforensics", "xception", pretrained=True)
+model=models.efficientnet_b0(pretrained=True)
+model.eval()
 @router.post("/detect/video")
 async def detect_video(file: UploadFile = File(...)):
     # Save the uploaded video temporarily

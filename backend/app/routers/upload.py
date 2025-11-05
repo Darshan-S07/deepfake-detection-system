@@ -1,9 +1,9 @@
 from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException
 from fastapi.responses import JSONResponse
 import os, uuid, shutil
-from app.auth import get_current_user
-from app.models.inference import analyze_file_paths
-from app.utils.db import get_db
+from auth import get_current_user
+from models.inference import analyze_file_paths
+from utils.db import get_db
 
 router = APIRouter(prefix="/media", tags=["media"])
 
