@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routes import detection
 import auth
-from routes import spam,unauthorized,viewer
+from routes import spam,unauthorized,viewer,metrics
 from routers import audio_detection,video_detection,upload
 
 app = FastAPI(title="Deepfake Detection API")
@@ -29,7 +29,7 @@ app.include_router(auth.router)
 app.include_router(spam.router,prefix="/api")
 app.include_router(unauthorized.router,prefix="/api")
 app.include_router(viewer.router,prefix="/api")
-
+app.include_router(metrics.router,prefix="/api")
 # Initialize MongoDB
 client = MongoClient("mongodb://localhost:27017/")
 db = client["deepfake_db"]

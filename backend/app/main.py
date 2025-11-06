@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .auth import router as auth_router
 from app.routers.upload import router as media_router
 from app.ws_stream import router as ws_router
-
+from routes import metrics
 app = FastAPI(title="SecureCallX API")
 
 # CORS (allow your React dev server)
@@ -22,3 +22,4 @@ def root():
 app.include_router(auth_router)
 app.include_router(media_router)
 app.include_router(ws_router)
+app.include_router(metrics.router)
