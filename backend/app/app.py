@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException,Request
 from pymongo import MongoClient
 from bson import ObjectId
 import shutil, os
@@ -9,7 +9,7 @@ from routes import detection
 import auth
 from routes import spam,unauthorized,viewer,metrics
 from routers import audio_detection,video_detection,upload
-
+from datetime import datetime
 app = FastAPI(title="Deepfake Detection API")
 
 app.include_router(upload.router, prefix="/media")
@@ -94,3 +94,19 @@ async def analyze_video(file: UploadFile = File(...)):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = datetime.utcnow()
+    response = await call_next(request)
+    duration = (datetime.utcnow() - start_time).total_seconds()
+
+    log_data = {
+        "timestamp": datetime.utcnow(),
+        "action": "API_CALL",
+        "endpoint": request.url.path,
+        "status": str(response.status_code),
+        "details": f"Method: {request.method}, Duration: {duration}s"
+    }
+    db.logs.insert_one(log_data)
+    return response

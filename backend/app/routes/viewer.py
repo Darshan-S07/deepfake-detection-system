@@ -1,49 +1,36 @@
-from bson import ObjectId
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import JSONResponse
+# app/routes/viewer.py
+
+from fastapi import APIRouter, HTTPException
 from pymongo import MongoClient
-from auth import get_current_user
+from bson import ObjectId
 
-router = APIRouter(prefix="/viewer", tags=["viewer"])
+router = APIRouter(prefix="/viewer", tags=["Viewer Logs"])
 
-# Connect to MongoDB
+# Connect to MongoDB (same DB as your main app)
 client = MongoClient("mongodb://localhost:27017/")
 db = client["deepfake_db"]
-logs_collection = db["analysis"]
+viewer_logs = db["viewer_logs"]
+
+def serialize_mongo_doc(doc: dict):
+    """Convert ObjectId to string for JSON response"""
+    if not doc:
+        return doc
+    return {k: str(v) if isinstance(v, ObjectId) else v for k, v in doc.items()}
 
 @router.get("/logs")
-async def get_all_logs(user: str = Depends(get_current_user)):
-    """
-    Fetch all logs for the authenticated user.
-    """
-    logs = list(logs_collection.find({"user": user}, {"_id": 0}))
-    if not logs:
-        return JSONResponse({"message": "No logs found for user", "data": []})
-    return JSONResponse({"total_logs": len(logs), "data": logs})
+async def get_all_logs():
+    """Return recent viewer logs"""
+    try:
+        logs = list(viewer_logs.find().sort("_id", -1).limit(20))
+        return [serialize_mongo_doc(log) for log in logs]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-
-@router.get("/logs/{detection_type}")
-async def get_logs_by_type(detection_type: str, user: str = Depends(get_current_user)):
-    """
-    Fetch logs filtered by detection type: audio, video, spam, unauthorized
-    """
-    valid_types = ["audio", "video", "spam", "unauthorized"]
-    if detection_type not in valid_types:
-        raise HTTPException(status_code=400, detail=f"Invalid type. Use one of: {valid_types}")
-
-    logs = list(logs_collection.find(
-        {"user": user, "type": detection_type},
-        {"_id": 0}
-    ))
-
-    if not logs:
-        return JSONResponse({"message": f"No {detection_type} logs found", "data": []})
-
-    return JSONResponse({"total_logs": len(logs), "data": logs})
-
-@router.get("/logs/{log_id}")
-def get_log_by_id(log_id: str):
-    log = db.detection_logs.find_one({"_id": ObjectId(log_id)})
-    if log:
-        return serialize_doc(log)
-    return {"error": "Log not found"}
+@router.get("/logs/{log_type}")
+async def get_logs_by_type(log_type: str):
+    """Return logs filtered by type (audio, video, spam, unauthorized)"""
+    try:
+        logs = list(viewer_logs.find({"type": log_type}).sort("_id", -1).limit(20))
+        return [serialize_mongo_doc(log) for log in logs]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
