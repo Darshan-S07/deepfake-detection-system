@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routes import detection
 import auth
-from routes import spam,unauthorized,viewer,metrics
+from routes import spam,unauthorized,viewer,metrics,inference_routes
 from routers import audio_detection,video_detection,upload
 from datetime import datetime
 app = FastAPI(title="Deepfake Detection API")
@@ -15,7 +15,7 @@ app = FastAPI(title="Deepfake Detection API")
 app.include_router(upload.router, prefix="/media")
 app.include_router(audio_detection.router, prefix="/audio")
 app.include_router(video_detection.router, prefix="/video")
-
+app.include_router(inference_routes.router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
