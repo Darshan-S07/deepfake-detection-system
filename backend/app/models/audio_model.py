@@ -3,7 +3,7 @@ import sys, os
 # Add ai_models/audio path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../ai_models/audio")))
 
-from audio_inference import AudioDeepfakeDetector
+from ai_models.audio.audio_inference import AudioDeepfakeDetector
 
 # Load model once
 audio_model_instance = AudioDeepfakeDetector()

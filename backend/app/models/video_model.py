@@ -3,7 +3,7 @@ import sys, os
 # Add ai_models/video path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../ai_models/video")))
 
-from video_inference import VideoDeepfakeDetector
+from ai_models.video.video_inference import VideoDeepfakeDetector
 
 # Load model once (no weights_path provided)
 video_model_instance = VideoDeepfakeDetector()
