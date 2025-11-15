@@ -5,7 +5,7 @@ from auth import get_current_user
 from models.inference import analyze_file_paths
 from utils.db import get_db
 
-router = APIRouter(prefix="/media", tags=["media"])
+router = APIRouter(tags=["media"])
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
