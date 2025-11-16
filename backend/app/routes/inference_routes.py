@@ -14,14 +14,20 @@ video_model = load_video_model()
 
 @router.post("/audio")
 async def analyze_audio(file: UploadFile = File(...)):
-    # Save temp file
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
         tmp.write(await file.read())
         tmp_path = tmp.name
 
-    result = predict_audio(audio_model, tmp_path)
-    log_detection("deepfake_audio", {"filename": file.filename}, {"result": result})
-    return {"status": "success", "file": file.filename, "result": result}
+    result = predict_audio(None, tmp_path)
+
+    log_detection("deepfake_audio", {"file": file.filename}, {"result": result})
+
+    return {
+        "status": "success",
+        "file": file.filename,
+        "result": result
+    }
+
 
 @router.post("/video")
 async def analyze_video(file: UploadFile = File(...)):
