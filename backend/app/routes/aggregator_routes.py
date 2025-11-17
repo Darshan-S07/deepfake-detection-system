@@ -1,8 +1,8 @@
 # backend/app/routes/aggregator_routes.py
 from fastapi import APIRouter, HTTPException
 from typing import Dict, Any
-from app.inference.aggregator import get_session_summary, add_result
-from app.utils.db import get_db
+from inference.aggregator import get_session_summary, add_result
+from utils.db import get_db
 
 router = APIRouter(prefix="/api/aggregator", tags=["Aggregator"])
 
