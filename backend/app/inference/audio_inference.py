@@ -5,7 +5,7 @@ from transformers import AutoModelForAudioClassification, AutoFeatureExtractor
 import librosa
 import numpy as np
 
-MODEL_NAME = "ai-forever/graphormer-audio-deepfake-detector"
+MODEL_NAME = "SWSJ/Audio-Deepfake-Detection-Wav2Vec2-Large"
 
 class AudioDeepfakeDetector:
     def __init__(self):

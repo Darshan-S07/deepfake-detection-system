@@ -1,6 +1,6 @@
 # backend/app/models/video_model.py
 
-from app.inference.video_inference import analyze_video_file
+from inference.video_inference import analyze_video_file
 
 def load_video_model():
     return True  # model loaded globally

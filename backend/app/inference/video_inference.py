@@ -3,16 +3,16 @@
 import cv2
 import torch
 import numpy as np
-from transformers import AutoImageProcessor, AutoModelForImageClassification
+from transformers import VideoMAEForVideoClassification, AutoProcessor
 
-MODEL_NAME = "cezeri/video-deepfake-detection"
+MODEL_NAME = "shylhy/videomae-large-finetuned-deepfake-subset"
 
 class VideoDeepfakeDetector:
     def __init__(self):
         print("🎥 Loading HuggingFace Video Deepfake Model...")
         
-        self.processor = AutoImageProcessor.from_pretrained(MODEL_NAME)
-        self.model = AutoModelForImageClassification.from_pretrained(MODEL_NAME)
+        self.processor = AutoProcessor.from_pretrained(MODEL_NAME)
+        self.model = VideoMAEForVideoClassification.from_pretrained(MODEL_NAME)
         self.model.eval()
         
         print("✅ Video model loaded successfully.")

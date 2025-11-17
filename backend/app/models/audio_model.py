@@ -1,47 +1,42 @@
-# backend/app/inference/audio_inference.py
-
-import torch
 from transformers import AutoModelForAudioClassification, AutoFeatureExtractor
-import librosa
-import numpy as np
+import torch
+import torchaudio
 
-MODEL_NAME = "ai-forever/graphormer-audio-deepfake-detector"
+MODEL_NAME = "HyperMoon/wav2vec2-base-960h-finetuned-deepfake"
 
-class AudioDeepfakeDetector:
-    def __init__(self):
-        print("🔊 Loading HuggingFace Audio Deepfake Model...")
-        self.feature_extractor = AutoFeatureExtractor.from_pretrained(MODEL_NAME)
-        self.model = AutoModelForAudioClassification.from_pretrained(MODEL_NAME)
-        self.model.eval()
-        print("✅ Audio model loaded successfully.")
+# Load model + extractor
+feature_extractor = AutoFeatureExtractor.from_pretrained(MODEL_NAME)
+model = AutoModelForAudioClassification.from_pretrained(MODEL_NAME)
 
-    def predict(self, audio_path: str):
-        # Load audio
-        signal, sr = librosa.load(audio_path, sr=16000)
+model.eval()
 
-        # Preprocess
-        inputs = self.feature_extractor(
-            signal,
-            sampling_rate=16000,
-            return_tensors="pt",
-            padding=True
-        )
-
-        # Model prediction
-        with torch.no_grad():
-            logits = self.model(**inputs).logits
-
-        probs = torch.softmax(logits, dim=1).cpu().numpy()[0]
-
-        return {
-            "real": float(probs[0]),
-            "fake": float(probs[1]),
-            "prediction": "FAKE" if probs[1] > probs[0] else "REAL"
-        }
+def load_audio_model():
+    return model, feature_extractor
 
 
-# Singleton instance
-audio_detector = AudioDeepfakeDetector()
+def predict_audio(file_path: str) -> dict:
+    waveform, sample_rate = torchaudio.load(file_path)
 
-def analyze_audio_file(path: str):
-    return audio_detector.predict(path)
+    # Resample to 16kHz if needed
+    if sample_rate != 16000:
+        transform = torchaudio.transforms.Resample(orig_freq=sample_rate, new_freq=16000)
+        waveform = transform(waveform)
+
+    inputs = feature_extractor(
+        waveform.squeeze().numpy(), 
+        sampling_rate=16000, 
+        return_tensors="pt"
+    )
+
+    with torch.no_grad():
+        logits = model(**inputs).logits
+        probs = torch.softmax(logits, dim=1)
+
+    fake_prob = float(probs[0][1])
+    real_prob = float(probs[0][0])
+
+    return {
+        "real": real_prob,
+        "fake": fake_prob,
+        "prediction": "FAKE" if fake_prob > 0.5 else "REAL"
+    }
