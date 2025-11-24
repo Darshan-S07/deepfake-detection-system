@@ -1,0 +1,42 @@
+{
+  "name": "Deepfake Detector",
+  "manifest_version": 3,
+  "version": "2.1",
+  "description": "Detect deepfake audio/video in live calls.",
+  "permissions": [
+    "scripting",
+    "storage",
+    "activeTab",
+    "tabs"
+  ],
+  "host_permissions": [
+    "*://meet.google.com/*",
+    "*://zoom.us/*",
+    "*://teams.microsoft.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://meet.google.com/*",
+        "*://zoom.us/*",
+        "*://teams.microsoft.com/*"
+      ],
+      "js": ["content_injector.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "page_hook.js","audioWorkletProcessor.js","js/pdf.min.js","libs/chart.min.js"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Deepfake Detector</title>
+  <style>body{font-family:system-ui;padding:10px}button{width:100%;padding:8px;margin-top:6px}</style>
+</head>
+<body>
+  <h3>Deepfake Detector</h3>
+  <div id="status">Status: Ready</div>
+  <button id="listSessions">List saved sessions</button>
+  <div id="sessions"></div>
+<script>
+document.getElementById('listSessions').onclick = async () => {
+  const all = await new Promise(r=>chrome.storage.local.get(null,r));
+  const keys = Object.keys(all).sort().reverse();
+  const el = document.getElementById('sessions'); el.innerHTML='';
+  keys.forEach(k => {
+    const btn = document.createElement('button');
+    btn.textContent = k;
+    btn.onclick = () => {
+      const blob = new Blob([JSON.stringify(all[k],null,2)],{type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download=k+'.json'; a.click();
+      URL.revokeObjectURL(url);
+    };
+    el.appendChild(btn);
+  });
+}
+</script>
+</body>
+</html>
